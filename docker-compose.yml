@@ -1,0 +1,233 @@
+version: "3"
+
+services:
+
+  # Database-related
+
+  database:
+    image: postgres:12.2-alpine
+    restart: always
+    volumes:
+      - myapi_database:/var/lib/postgresql/data
+      - "${PWD}/ms_mailer/init.sql:/docker-entrypoint-initdb.d/init.sql"
+    environment: 
+      POSTGRES_USER: myproject
+      POSTGRES_PASSWORD: myprojectpwd
+      POSTGRES_MULTIPLE_DATABASES: myproject,myprojectmailer
+
+  adminer:
+    image: adminer:4.7.6
+    restart: always
+    ports:
+      - 9981:8080
+
+  # Service-related
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+    restart: always
+    volumes:
+      - "es01:/usr/share/elasticsearch/data"
+      - "./elasticsearch/certs:/usr/share/elasticsearch/config/certificates:ro"
+    environment:
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
+      ELASTIC_PASSWORD: elasticpwd
+      node.name: es01
+      cluster.name: es-docker-cluster
+      discovery.seed_hosts: es02,es03
+      cluster.initial_master_nodes: es01,es02,es03
+      network.host: 0.0.0.0
+      xpack.license.self_generated.type: basic
+      xpack.monitoring.collection.enabled: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "true"
+      xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certificates/es01/es01.key
+      xpack.security.http.ssl.certificate_authorities: /usr/share/elasticsearch/config/certificates/ca/ca.crt
+      xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certificates/es01/es01.crt
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate 
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certificates/ca/ca.crt
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certificates/es01/es01.crt
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certificates/es01/es01.key
+      cluster.routing.allocation.disk.threshold_enabled: "true"
+      cluster.routing.allocation.disk.watermark.low: 93%
+      cluster.routing.allocation.disk.watermark.high: 95%
+    depends_on:
+      - es02
+      - es03
+    ulimits: 
+      memlock:
+        soft: 262144
+        hard: 500000
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+    restart: always
+    volumes:
+      - "es02:/usr/share/elasticsearch/data"
+      - "./elasticsearch/certs:/usr/share/elasticsearch/config/certificates:ro"
+    environment:
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
+      ELASTIC_PASSWORD: elasticpwd
+      node.name: es02
+      cluster.name: es-docker-cluster
+      discovery.seed_hosts: es01,es03
+      cluster.initial_master_nodes: es01,es02,es03
+      xpack.license.self_generated.type: basic
+      xpack.monitoring.collection.enabled: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "true"
+      xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certificates/es02/es02.key
+      xpack.security.http.ssl.certificate_authorities: /usr/share/elasticsearch/config/certificates/ca/ca.crt
+      xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certificates/es02/es02.crt
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate 
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certificates/ca/ca.crt
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certificates/es02/es02.crt
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certificates/es02/es02.key
+      cluster.routing.allocation.disk.threshold_enabled: "true"
+      cluster.routing.allocation.disk.watermark.low: 93%
+      cluster.routing.allocation.disk.watermark.high: 95%
+    ulimits: 
+      memlock:
+        soft: 262144
+        hard: 500000
+
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.8.0
+    restart: always
+    volumes:
+      - "es03:/usr/share/elasticsearch/data"
+      - "./elasticsearch/certs:/usr/share/elasticsearch/config/certificates:ro"
+    environment:
+      ES_JAVA_OPTS: "-Xmx512m -Xms512m"
+      ELASTIC_PASSWORD: elasticpwd
+      node.name: es03
+      cluster.name: es-docker-cluster
+      discovery.seed_hosts: es01,es02
+      cluster.initial_master_nodes: es01,es02,es03
+      xpack.license.self_generated.type: basic
+      xpack.monitoring.collection.enabled: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "true"
+      xpack.security.http.ssl.key: /usr/share/elasticsearch/config/certificates/es03/es03.key
+      xpack.security.http.ssl.certificate_authorities: /usr/share/elasticsearch/config/certificates/ca/ca.crt
+      xpack.security.http.ssl.certificate: /usr/share/elasticsearch/config/certificates/es03/es03.crt
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate 
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certificates/ca/ca.crt
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certificates/es03/es03.crt
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certificates/es03/es03.key
+      cluster.routing.allocation.disk.threshold_enabled: "true"
+      cluster.routing.allocation.disk.watermark.low: 93%
+      cluster.routing.allocation.disk.watermark.high: 95%
+    ulimits: 
+      memlock:
+        soft: 262144
+        hard: 500000
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.7.1
+    restart: always
+    volumes:
+      - "./elasticsearch/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml"
+      - "./elasticsearch/certs:/usr/share/elasticsearch/config/certificates:ro"
+    ports:
+      - "9985:5601"
+    depends_on:
+      - es01
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: "myproject"
+      RABBITMQ_DEFAULT_PASS: "myprojectpwd"
+      RABBITMQ_ERLANG_COOKIE: "secret cookie"
+    volumes:
+      - myapi_rabbitmq:/var/lib/rabbitmq
+
+  api:
+    build: ./api
+    restart: always
+    ports:
+      - "9980:5000"
+    volumes:
+      - ./api/app:/app
+      - ./migrations:/migrations
+      - ./uploads:/uploads
+      - ./logs_api:/logs
+      - "./elasticsearch/certs:/usr/share/elasticsearch/config/certificates:ro"
+    environment: 
+      FLASK_API_VERSION: "1.0"
+      FLASK_SERVER_NAME: "MyAPI JWT API"
+      FLASK_SERVER_DESCRIPTION: "MyAPI ETNA project - JWT API"
+      FLASK_SECRET_KEY: "CHANGE ME WITH A SECURE PASSWORD"
+      FLASK_LEVEL: "dev" # dev, test or prod
+      LOG_LEVEL: "DEBUG" # DEBUG, INFO, WARNING or ERROR
+
+      POSTGRES_HOST: "database"
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: "myproject"
+      POSTGRES_PASSWORD: "myprojectpwd"
+      POSTGRES_DB: "myproject"
+      RABBITMQ_DEFAULT_USER: "myproject"
+      RABBITMQ_DEFAULT_PASS: "myprojectpwd"
+    depends_on:
+      - database
+      - es01
+      - rabbitmq
+
+  mailer:
+    build: ./ms_mailer
+    restart: always
+    volumes:
+      - ./ms_mailer:/mailer
+      - ./ms_mailer/api:/mailer/api
+      - ./ms_mailer/app:/mailer/app
+      - ./ms_mailer/migrations:/mailer/migrations
+    environment:
+      DB_NAME: "myprojectmailer"
+      DB_USER: "myproject"
+      DB_PASSWORD: "myprojectpwd"
+      DB_HOST: "database"
+      DB_PORT: "5432"
+      FLASK_APP: __init__.py
+      FLASK_API_VERSION: "1.0"
+      FLASK_SERVER_NAME: "Service Mailer"
+      FLASK_SERVER_DESCRIPTION: "Service mailer"
+      FLASK_LEVEL: "dev"
+      LOG_LEVEL: "DEBUG"
+    depends_on:
+      - database
+
+  # Encoder-related
+  encoder:
+    build: ./encoder
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: "myproject"
+      RABBITMQ_DEFAULT_PASS: "myprojectpwd"
+    volumes: 
+      - ./encoder/app:/app
+      - ./uploads:/uploads
+    depends_on:
+      - rabbitmq
+
+  app:
+    build: ./app
+    restart: always
+    ports:
+      - "9982:3000"
+    volumes:
+      - ./app/app:/app
+    environment:
+      NODE_ENV: "development"
+      CHOKIDAR_USEPOLLING: "true"
+
+volumes:
+  myapi_database:
+  es01:
+  es02:
+  es03:
+  myapi_rabbitmq:

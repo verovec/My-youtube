@@ -1,0 +1,44 @@
+[
+  {
+    "name": "dashboard",
+    "path": "/dashboard",
+    "component": "/app/pages/dashboard/index.vue",
+    "chunkName": "pages/dashboard/index",
+    "_name": "_72270b1d"
+  },
+  {
+    "name": "video",
+    "path": "/video",
+    "component": "/app/pages/video.vue",
+    "chunkName": "pages/video",
+    "_name": "_a4dff4fe"
+  },
+  {
+    "name": "auth-login",
+    "path": "/auth/login",
+    "component": "/app/pages/auth/login.vue",
+    "chunkName": "pages/auth/login",
+    "_name": "_8e1272a8"
+  },
+  {
+    "name": "auth-register",
+    "path": "/auth/register",
+    "component": "/app/pages/auth/register.vue",
+    "chunkName": "pages/auth/register",
+    "_name": "_33eac2b0"
+  },
+  {
+    "name": "dashboard-upload",
+    "path": "/dashboard/upload",
+    "component": "/app/pages/dashboard/upload.vue",
+    "chunkName": "pages/dashboard/upload",
+    "_name": "_cb55f474"
+  },
+  {
+    "name": "index",
+    "path": "/",
+    "component": "/app/pages/index.vue",
+    "chunkName": "pages/index",
+    "_name": "_2dfb1658"
+  }
+]
